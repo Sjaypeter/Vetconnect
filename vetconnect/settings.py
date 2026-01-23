@@ -216,8 +216,35 @@ STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY', default='')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 
-# Twilio Configuration (for SMS)
-# Zoom API Configuration (optional)
+
+
+# CELERY
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+
+# EMAIL
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_PORT = config('EMAIL_PORT', cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+# Celery configuration (for background tasks)
+# CELERY_BROKER_URL = 'redis://localhost:6379/0'
+# CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+# CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_SERIALIZER = 'json'
+# CELERY_TIMEZONE = 'UTC'
+
+# Zoom API Configuration (optional - for actual Zoom integration)
+ZOOM_API_KEY = 'your-zoom-api-key'
+ZOOM_API_SECRET = 'your-zoom-api-secret'
+
+# Twilio Configuration (optional - for SMS notifications)
+TWILIO_ACCOUNT_SID = 'your-twilio-sid'
+TWILIO_AUTH_TOKEN = 'your-twilio-token'
+TWILIO_PHONE_NUMBER = 'your-twilio-phone'
 # Login/Logout URLs
 
 #email backend
