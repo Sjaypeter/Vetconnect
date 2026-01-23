@@ -3,7 +3,6 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken.views import obtain_auth_token
 
-# Import ViewSets from each app
 from apps.accounts.views import (
     UserViewSet, VetProfileViewSet, ClientProfileViewSet,
     RegisterView, LogoutView, CurrentUserView, ChangePasswordView
@@ -19,6 +18,10 @@ from apps.notifications.views import (
 from apps.chat.views import ChatMessageViewSet, ChatRoomViewSet, RoomMessageViewSet
 from apps.reviews.views import ReviewViewSet
 
+from apps.payments.views import (
+    PaymentViewSet, InvoiceViewSet, RefundViewSet,
+    PaymentMethodViewSet, WalletViewSet
+)
 router = DefaultRouter()
 
 # Accounts
@@ -49,6 +52,13 @@ router.register(r'room-messages', RoomMessageViewSet, basename='room-message')
 
 # Reviews
 router.register(r'reviews', ReviewViewSet, basename='review')
+
+#Payments
+router.register(r'payments', PaymentViewSet, basename='payment')
+router.register(r'invoices', InvoiceViewSet, basename='invoice')
+router.register(r'refunds', RefundViewSet, basename='refund')
+router.register(r'payment-methods', PaymentMethodViewSet, basename='payment-method')
+router.register(r'wallets', WalletViewSet, basename='wallet')
 
 app_name = 'api_v1'
 
