@@ -6,75 +6,45 @@ from apps.appointments.models import Appointment
 from apps.payments.models import Payment
 from apps.accounts.models import User
 from apps.reviews.models import Review
+from .models import DailyStatistic
+
+
 
 @shared_task(name='apps.analytics.tasks.generate_daily_statistics')
 def generate_daily_statistics():
-    """
-    Generate daily statistics for the platform
-    Runs daily at 12:05 AM
-    """
     
     yesterday = timezone.now().date() - timedelta(days=1)
     
-    # Appointment statistics
-    appointments_stats = {
-        'total': Appointment.objects.filter(
-            created_at__date=yesterday
-        ).count(),
-        'completed': Appointment.objects.filter(
-            appointment_date__date=yesterday,
-            status='completed'
-        ).count(),
-        'cancelled': Appointment.objects.filter(
-            appointment_date__date=yesterday,
-            status='cancelled'
-        ).count(),
-    }
-    
-    # Payment statistics
-    payments = Payment.objects.filter(
-        paid_at__date=yesterday,
-        status='completed'
+    # Create or update statistics
+    stats, created = DailyStatistic.objects.get_or_create(
+        date=yesterday,
+        defaults={
+            'total_users': User.objects.count(),
+            'new_users_today': User.objects.filter(date_joined__date=yesterday).count(),
+            'total_appointments': Appointment.objects.filter(created_at__date=yesterday).count(),
+            'completed_appointments': Appointment.objects.filter(
+                appointment_date__date=yesterday,
+                status='completed'
+            ).count(),
+            'cancelled_appointments': Appointment.objects.filter(
+                appointment_date__date=yesterday,
+                status='cancelled'
+            ).count(),
+            'number_of_payments': Payment.objects.filter(paid_at__date=yesterday).count(),
+            'total_revenue': Payment.objects.filter(
+                paid_at__date=yesterday,
+                status='completed'
+            ).aggregate(Sum('amount'))['amount__sum'] or 0,
+            'total_reviews': Review.objects.filter(created_at__date=yesterday).count(),
+            'average_rating': Review.objects.filter(
+                created_at__date=yesterday
+            ).aggregate(Avg('rating'))['rating__avg'] or 0,
+        }
     )
-    payments_stats = {
-        'count': payments.count(),
-        'total_amount': payments.aggregate(Sum('amount'))['amount__sum'] or 0,
-    }
     
-    # User statistics
-    users_stats = {
-        'new_clients': User.objects.filter(
-            date_joined__date=yesterday,
-            user_type='client'
-        ).count(),
-        'new_vets': User.objects.filter(
-            date_joined__date=yesterday,
-            user_type='vet'
-        ).count(),
-    }
-    
-    # Review statistics
-    reviews_stats = {
-        'count': Review.objects.filter(
-            created_at__date=yesterday
-        ).count(),
-        'average_rating': Review.objects.filter(
-            created_at__date=yesterday
-        ).aggregate(Avg('rating'))['rating__avg'] or 0,
-    }
-    
-    # Log statistics (you can save to database if needed)
-    stats = {
-        'date': yesterday,
-        'appointments': appointments_stats,
-        'payments': payments_stats,
-        'users': users_stats,
-        'reviews': reviews_stats,
-    }
-    
-    print(f"Daily statistics generated for {yesterday}: {stats}")
-    
-    return f"Statistics generated for {yesterday}"
+    return f"Statistics saved for {yesterday}"
+"""
+
 
 
 @shared_task
