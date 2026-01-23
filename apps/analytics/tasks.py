@@ -43,7 +43,7 @@ def generate_daily_statistics():
     )
     
     return f"Statistics saved for {yesterday}"
-"""
+
 
 
 
