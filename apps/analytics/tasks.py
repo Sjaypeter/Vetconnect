@@ -1,4 +1,4 @@
-from celery import shared_task
+from vetconnect.celery import shared_task
 from django.utils import timezone
 from django.db.models import Count, Sum, Avg
 from datetime import timedelta, date

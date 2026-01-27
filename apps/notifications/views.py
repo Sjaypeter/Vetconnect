@@ -7,7 +7,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.utils import timezone
 from .models import Notification, EmailLog, SMSLog
-from notifications.serializers import NotificationSerializer, EmailLogSerializer, SMSLogSerializer
+from apps.notifications.serializers import NotificationSerializer, EmailLogSerializer, SMSLogSerializer
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
