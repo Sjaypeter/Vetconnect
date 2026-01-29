@@ -100,25 +100,25 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         address = validated_data.pop('address', '')
         emergency_contact = validated_data.pop('emergency_contact', '')
         
-        # Create user
+        # Create user (signal will automatically create the profile)
         user = User.objects.create_user(**validated_data)
         
-        # Create profile based on user type
+        # Update the profile with additional data
         if user.user_type == 'vet':
-            VetProfile.objects.create(
-                user=user,
-                specialization=specialization,
-                license_number=license_number,
-                years_of_experience=years_of_experience,
-                bio=bio,
-                consultation_fee=consultation_fee
-            )
+            # Profile was created by signal, just update it
+            vet_profile = user.vet_profile
+            vet_profile.specialization = specialization
+            vet_profile.license_number = license_number
+            vet_profile.years_of_experience = years_of_experience
+            vet_profile.bio = bio
+            vet_profile.consultation_fee = consultation_fee
+            vet_profile.save()
         else:
-            ClientProfile.objects.create(
-                user=user,
-                address=address,
-                emergency_contact=emergency_contact
-            )
+            # Profile was created by signal, just update it
+            client_profile = user.client_profile
+            client_profile.address = address
+            client_profile.emergency_contact = emergency_contact
+            client_profile.save()
         
         return user
 
