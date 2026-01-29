@@ -12,23 +12,129 @@ from django.db.models import Avg, Q
 from .models import User, VetProfile, ClientProfile
 from .serializers import (
     UserSerializer, VetProfileSerializer, ClientProfileSerializer,
+    ClientRegistrationSerializer, VetRegistrationSerializer,
     UserRegistrationSerializer, ChangePasswordSerializer
 )
 
 
+class ClientRegisterView(generics.CreateAPIView):
+    """
+    Register a new Client/Pet Owner
+    
+    Creates a new client account and returns authentication token.
+    """
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = ClientRegistrationSerializer
+    
+    @swagger_auto_schema(
+        operation_description="Register a new client/pet owner",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['username', 'email', 'password', 'password2', 'first_name', 'last_name'],
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Unique username'),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, format='email', description='Email address'),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, format='password', description='Password'),
+                'password2': openapi.Schema(type=openapi.TYPE_STRING, format='password', description='Confirm password'),
+                'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='First name'),
+                'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Last name'),
+                'phone': openapi.Schema(type=openapi.TYPE_STRING, description='Phone number'),
+                'address': openapi.Schema(type=openapi.TYPE_STRING, description='Home address'),
+                'emergency_contact': openapi.Schema(type=openapi.TYPE_STRING, description='Emergency contact number'),
+            }
+        ),
+        responses={
+            201: openapi.Response(
+                'Client registered successfully',
+                UserSerializer
+            ),
+            400: 'Bad Request - Validation errors'
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        # Create authentication token
+        token, created = Token.objects.get_or_create(user=user)
+        
+        return Response({
+            'user': UserSerializer(user).data,
+            'token': token.key,
+            'message': 'Client registered successfully'
+        }, status=status.HTTP_201_CREATED)
+
+
+class VetRegisterView(generics.CreateAPIView):
+    """
+    Register a new Veterinarian
+    
+    Creates a new veterinarian account and returns authentication token.
+    Account will need admin verification before being activated.
+    """
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = VetRegistrationSerializer
+    
+    @swagger_auto_schema(
+        operation_description="Register a new veterinarian",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['username', 'email', 'password', 'password2', 'first_name', 
+                     'last_name', 'specialization', 'license_number'],
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Unique username'),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, format='email', description='Email address'),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, format='password', description='Password'),
+                'password2': openapi.Schema(type=openapi.TYPE_STRING, format='password', description='Confirm password'),
+                'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='First name'),
+                'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Last name'),
+                'phone': openapi.Schema(type=openapi.TYPE_STRING, description='Phone number'),
+                'specialization': openapi.Schema(type=openapi.TYPE_STRING, description='Medical specialization (e.g., Small Animals, Surgery)'),
+                'license_number': openapi.Schema(type=openapi.TYPE_STRING, description='Veterinary license number'),
+                'years_of_experience': openapi.Schema(type=openapi.TYPE_INTEGER, description='Years of experience', default=0),
+                'bio': openapi.Schema(type=openapi.TYPE_STRING, description='Professional bio'),
+                'consultation_fee': openapi.Schema(type=openapi.TYPE_NUMBER, description='Consultation fee', default=0),
+            }
+        ),
+        responses={
+            201: openapi.Response(
+                'Veterinarian registered successfully',
+                UserSerializer
+            ),
+            400: 'Bad Request - Validation errors'
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        # Create authentication token
+        token, created = Token.objects.get_or_create(user=user)
+        
+        return Response({
+            'user': UserSerializer(user).data,
+            'token': token.key,
+            'message': 'Veterinarian registered successfully. Your account will be verified by admin.',
+            'note': 'Account verification required before you can accept appointments'
+        }, status=status.HTTP_201_CREATED)
+
+
 class RegisterView(generics.CreateAPIView):
     """
-    Register a new user (Client or Veterinarian)
+    DEPRECATED: Use /api/v1/auth/register/client/ or /api/v1/auth/register/vet/ instead
     
-    Creates a new user account and returns authentication token.
-    User profile is automatically created based on user_type.
+    Generic registration endpoint (kept for backward compatibility)
     """
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = UserRegistrationSerializer
     
     @swagger_auto_schema(
-        operation_description="Register a new user",
+        operation_description="Register a new user (DEPRECATED - Use specific endpoints)",
         responses={
             201: openapi.Response(
                 'User created successfully',

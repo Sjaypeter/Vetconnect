@@ -5,7 +5,8 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 from apps.accounts.views import (
     UserViewSet, VetProfileViewSet, ClientProfileViewSet,
-    RegisterView, LogoutView, CurrentUserView, ChangePasswordView
+    RegisterView, ClientRegisterView, VetRegisterView,
+    LogoutView, CurrentUserView, ChangePasswordView
 )
 from apps.pets.views import PetViewSet
 from apps.appointments.views import AppointmentViewSet
@@ -22,6 +23,7 @@ from apps.payments.views import (
     PaymentViewSet, InvoiceViewSet, RefundViewSet,
     PaymentMethodViewSet, WalletViewSet
 )
+
 router = DefaultRouter()
 
 # Accounts
@@ -53,7 +55,7 @@ router.register(r'room-messages', RoomMessageViewSet, basename='room-message')
 # Reviews
 router.register(r'reviews', ReviewViewSet, basename='review')
 
-#Payments
+# Payments
 router.register(r'payments', PaymentViewSet, basename='payment')
 router.register(r'invoices', InvoiceViewSet, basename='invoice')
 router.register(r'refunds', RefundViewSet, basename='refund')
@@ -64,10 +66,13 @@ app_name = 'api_v1'
 
 urlpatterns = [
     # Authentication endpoints
-    path('auth/register/', RegisterView.as_view(), name='auth_register'),
     path('auth/login/', obtain_auth_token, name='auth_login'),
     path('auth/logout/', LogoutView.as_view(), name='auth_logout'),
+    path('auth/register/client/', ClientRegisterView.as_view(), name='auth_register_client'),
+    path('auth/register/vet/', VetRegisterView.as_view(), name='auth_register_vet'),
+    path('auth/register/', RegisterView.as_view(), name='auth_register'),  
     path('auth/user/', CurrentUserView.as_view(), name='current_user'),
+    path('auth/me/', CurrentUserView.as_view(), name='auth_me'),  
     path('auth/change-password/', ChangePasswordView.as_view(), name='change_password'),
     
     # Router URLs

@@ -51,8 +51,110 @@ class ClientProfileSerializer(serializers.ModelSerializer):
                   'preferred_language', 'created_at', 'updated_at']
 
 
+class ClientRegistrationSerializer(serializers.ModelSerializer):
+    """Serializer for client registration"""
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True, label="Confirm Password")
+    
+    # Client-specific fields
+    address = serializers.CharField(required=False, allow_blank=True)
+    emergency_contact = serializers.CharField(required=False, allow_blank=True)
+    
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'password2', 'first_name', 
+                  'last_name', 'phone', 'profile_picture', 'address', 'emergency_contact']
+    
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        return attrs
+    
+    def create(self, validated_data):
+        # Remove extra fields
+        validated_data.pop('password2')
+        address = validated_data.pop('address', '')
+        emergency_contact = validated_data.pop('emergency_contact', '')
+        
+        # Force user_type to client
+        validated_data['user_type'] = 'client'
+        
+        # Create user (signal will automatically create the profile)
+        user = User.objects.create_user(**validated_data)
+        
+        # Update the client profile with additional data
+        client_profile = user.client_profile
+        client_profile.address = address
+        client_profile.emergency_contact = emergency_contact
+        client_profile.save()
+        
+        return user
+
+
+class VetRegistrationSerializer(serializers.ModelSerializer):
+    """Serializer for veterinarian registration"""
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True, label="Confirm Password")
+    
+    # Vet-specific fields
+    specialization = serializers.CharField(required=True)
+    license_number = serializers.CharField(required=True)
+    years_of_experience = serializers.IntegerField(required=False, default=0)
+    bio = serializers.CharField(required=False, allow_blank=True)
+    consultation_fee = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, default=0
+    )
+    
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'password2', 'first_name', 
+                  'last_name', 'phone', 'profile_picture', 'specialization', 
+                  'license_number', 'years_of_experience', 'bio', 'consultation_fee']
+    
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        
+        if not attrs.get('specialization'):
+            raise serializers.ValidationError({"specialization": "This field is required for veterinarians."})
+        
+        if not attrs.get('license_number'):
+            raise serializers.ValidationError({"license_number": "This field is required for veterinarians."})
+        
+        return attrs
+    
+    def create(self, validated_data):
+        # Remove extra fields
+        validated_data.pop('password2')
+        specialization = validated_data.pop('specialization')
+        license_number = validated_data.pop('license_number')
+        years_of_experience = validated_data.pop('years_of_experience', 0)
+        bio = validated_data.pop('bio', '')
+        consultation_fee = validated_data.pop('consultation_fee', 0)
+        
+        # Force user_type to vet
+        validated_data['user_type'] = 'vet'
+        
+        # Create user (signal will automatically create the profile)
+        user = User.objects.create_user(**validated_data)
+        
+        # Update the vet profile with additional data
+        vet_profile = user.vet_profile
+        vet_profile.specialization = specialization
+        vet_profile.license_number = license_number
+        vet_profile.years_of_experience = years_of_experience
+        vet_profile.bio = bio
+        vet_profile.consultation_fee = consultation_fee
+        vet_profile.save()
+        
+        return user
+
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for user registration"""
+    """
+    DEPRECATED: Use ClientRegistrationSerializer or VetRegistrationSerializer instead
+    Generic serializer for user registration (kept for backward compatibility)
+    """
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
     
@@ -105,7 +207,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         
         # Update the profile with additional data
         if user.user_type == 'vet':
-            # Profile was created by signal, just update it
             vet_profile = user.vet_profile
             vet_profile.specialization = specialization
             vet_profile.license_number = license_number
@@ -114,7 +215,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             vet_profile.consultation_fee = consultation_fee
             vet_profile.save()
         else:
-            # Profile was created by signal, just update it
             client_profile = user.client_profile
             client_profile.address = address
             client_profile.emergency_contact = emergency_contact
